@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Speak For Me — Communication Aid</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#121417" id="theme-color-meta">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Speak For Me">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #121417;
+    --bg-elevated: #1b1f24;
+    --card: #20242a;
+    --card-border: #323841;
+    --text: #f2f3f5;
+    --text-dim: #9aa2ad;
+    --accent: #5fb3ff;
+    --focus: #ffd166;
+
+    --emergency: #a8271f;
+    --emergency-text: #ffffff;
+    --restroom: #d9960b;
+    --restroom-text: #1a1200;
+    --pain: #b1500f;
+    --pain-text: #ffffff;
+    --food: #1c6b86;
+    --food-text: #ffffff;
+    --comfort: #2b7a34;
+    --comfort-text: #ffffff;
+    --yes: #2fa85b;
+    --yes-text: #05170b;
+    --no: #b23a2c;
+    --no-text: #ffffff;
+
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      color-scheme: light;
+      --bg: #f3f4f6;
+      --bg-elevated: #ffffff;
+      --card: #ffffff;
+      --card-border: #dde1e6;
+      --text: #14161a;
+      --text-dim: #565d67;
+    }
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --bg: #f3f4f6;
+    --bg-elevated: #ffffff;
+    --card: #ffffff;
+    --card-border: #dde1e6;
+    --text: #14161a;
+    --text-dim: #565d67;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #121417;
+    --bg-elevated: #1b1f24;
+    --card: #20242a;
+    --card-border: #323841;
+    --text: #f2f3f5;
+    --text-dim: #9aa2ad;
+  }
+
+  html[data-scale="lg"] { font-size: 112.5%; }
+  html[data-scale="xl"] { font-size: 125%; }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    height: 100%;
+    background: var(--bg);
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+    color: var(--text);
+    -webkit-tap-highlight-color: transparent;
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+  button { font-family: inherit; }
+  button:focus-visible, [tabindex]:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    position: sticky;
+    top: 0;
+    padding-top: calc(12px + var(--safe-top));
+    margin-top: calc(-1 * var(--safe-top));
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--card-border);
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-bottom: 10px;
+    z-index: 10;
+  }
+  .topbar-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .brand {
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+  }
+  .icon-btn {
+    background: none;
+    border: 1px solid var(--card-border);
+    color: var(--text);
+    border-radius: 10px;
+    width: 42px;
+    height: 42px;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .icon-btn:active { transform: scale(0.94); }
+
+  .tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .tab {
+    border: 1px solid var(--card-border);
+    background: var(--card);
+    color: var(--text-dim);
+    padding: 10px 8px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .tab[aria-selected="true"] {
+    background: var(--accent);
+    color: #051323;
+    border-color: var(--accent);
+  }
+
+  main {
+    flex: 1;
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 16px;
+    padding-bottom: calc(24px + var(--safe-bottom));
+  }
+
+  [hidden] { display: none !important; }
+
+  /* ---------- Patient view ---------- */
+  .patient-lead {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.95rem;
+    margin-bottom: 14px;
+  }
+  .grid-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+  .btn-emergency { grid-column: span 2; min-height: 128px; }
+  .comm-btn {
+    border: none;
+    border-radius: 18px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 18px 10px;
+    min-height: 116px;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.28);
+    transition: transform 0.08s ease, filter 0.08s ease;
+  }
+  .comm-btn:active { transform: scale(0.96); filter: brightness(0.88); }
+  .comm-btn .icon { font-size: 2.6rem; line-height: 1; }
+
+  .btn-emergency { background: var(--emergency); color: var(--emergency-text); }
+  .btn-restroom  { background: var(--restroom);  color: var(--restroom-text); }
+  .btn-pain      { background: var(--pain);      color: var(--pain-text); }
+  .btn-food      { background: var(--food);      color: var(--food-text); }
+  .btn-comfort   { background: var(--comfort);   color: var(--comfort-text); }
+  .btn-yes       { background: var(--yes);       color: var(--yes-text); }
+  .btn-no        { background: var(--no);        color: var(--no-text); }
+
+  .patient-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .ghost-btn {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    color: var(--text);
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+  .ghost-btn:active { transform: scale(0.97); }
+
+  /* ---------- Caregiver view ---------- */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .card h3 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-dim);
+    margin: 0 0 10px 0;
+    font-weight: 700;
+  }
+  .status-box {
+    background: var(--bg);
+    border: 1px solid var(--card-border);
+    padding: 16px;
+    border-radius: 10px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    text-align: center;
+  }
+  .status-time {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-dim);
+  }
+  .instruction-list {
+    padding-left: 20px;
+    margin: 0;
+  }
+  .instruction-list li {
+    margin-bottom: 8px;
+    line-height: 1.45;
+    font-size: 0.98rem;
+  }
+  .empty-note { color: var(--text-dim); font-size: 0.95rem; }
+
+  .history-list {
+    list-style: none;
+    margin: 0; padding: 0;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+  .history-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--card-border);
+    font-size: 0.92rem;
+  }
+  .history-list li:last-child { border-bottom: none; }
+  .history-time { color: var(--text-dim); white-space: nowrap; }
+
+  .field-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .field-row:last-child { margin-bottom: 0; }
+  .field-label { font-size: 0.95rem; font-weight: 600; }
+  input[type="range"] { width: 55%; accent-color: var(--accent); }
+  select {
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 0.92rem;
+    max-width: 55%;
+  }
+  .scale-group, .theme-group {
+    display: flex;
+    gap: 6px;
+  }
+  .chip {
+    border: 1px solid var(--card-border);
+    background: var(--bg);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.88rem;
+    cursor: pointer;
+  }
+  .chip[aria-pressed="true"] {
+    background: var(--accent);
+    color: #051323;
+    border-color: var(--accent);
+  }
+  .full-btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid var(--card-border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .full-btn.danger { color: #ff9d8f; border-color: #5c2c26; }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px; height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-row">
+      <div class="brand">🗣️ Speak For Me</div>
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch color theme">🌙</button>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Screen">
+      <button class="tab" id="tab-patient" role="tab" aria-selected="true" aria-controls="panel-patient" type="button">🗣️ Patient</button>
+      <button class="tab" id="tab-caregiver" role="tab" aria-selected="false" aria-controls="panel-caregiver" type="button">🩺 Caregiver</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ================= PATIENT VIEW ================= -->
+    <section id="panel-patient" role="tabpanel" aria-labelledby="tab-patient">
+      <p class="patient-lead">Tap a button. It speaks out loud for you.</p>
+
+      <div class="grid-container">
+        <button class="comm-btn btn-emergency" type="button"
+          onclick="speak('Attention please. I need immediate help right now.', '🚨 EMERGENCY HELP REQUESTED', 'emergency')">
+          <span class="icon" aria-hidden="true">🚨</span>
+          <span>EMERGENCY</span>
+        </button>
+
+        <button class="comm-btn btn-restroom" type="button"
+          onclick="speak('I need to use the restroom. Please assist me.', '🚽 Restroom assistance requested', 'restroom')">
+          <span class="icon" aria-hidden="true">🚽</span>
+          <span>RESTROOM</span>
+        </button>
+
+        <button class="comm-btn btn-pain" type="button"
+          onclick="speak('I am in pain or discomfort. I need my medication.', '💊 Pain or medication request', 'pain')">
+          <span class="icon" aria-hidden="true">💊</span>
+          <span>PAIN / MEDS</span>
+        </button>
+
+        <button class="comm-btn btn-food" type="button"
+          onclick="speak('I am thirsty or hungry. Please bring water or food.', '🥤 Food or drink requested', 'food')">
+          <span class="icon" aria-hidden="true">🥤</span>
+          <span>FOOD / DRINK</span>
+        </button>
+
+        <button class="comm-btn btn-comfort" type="button"
+          onclick="speak('I am uncomfortable. Please help me adjust my position.', '🛌 Repositioning needed', 'comfort')">
+          <span class="icon" aria-hidden="true">🛌</span>
+          <span>MOVE / BED</span>
+        </button>
+
+        <button class="comm-btn btn-yes" type="button"
+          onclick="speak('Yes.', '✅ Patient said: YES', 'yes')">
+          <span class="icon" aria-hidden="true">✅</span>
+          <span>YES</span>
+        </button>
+
+        <button class="comm-btn btn-no" type="button"
+          onclick="speak('No.', '❌ Patient said: NO', 'no')">
+          <span class="icon" aria-hidden="true">❌</span>
+          <span>NO</span>
+        </button>
+      </div>
+
+      <div class="patient-controls">
+        <button class="ghost-btn" type="button" id="repeat-btn">🔁 Repeat</button>
+        <button class="ghost-btn" type="button" id="stop-btn">🔇 Stop</button>
+      </div>
+    </section>
+
+    <!-- ================= CAREGIVER VIEW ================= -->
+    <section id="panel-caregiver" role="tabpanel" aria-labelledby="tab-caregiver" hidden>
+
+      <div class="card">
+        <h3>Latest request</h3>
+        <div class="status-box" id="status-display" role="status" aria-live="assertive">
+          Awaiting input from patient…
+          <span class="status-time" id="status-time"></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Care guidelines</h3>
+        <div id="instruction-display">
+          <p class="empty-note">Guidelines for the patient's request will appear here.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Request history</h3>
+        <ul class="history-list" id="history-list">
+          <li><span class="empty-note">No requests yet.</span></li>
+        </ul>
+        <button class="full-btn danger" type="button" id="clear-history-btn" style="margin-top:12px;">Clear history</button>
+      </div>
+
+      <div class="card">
+        <h3>Voice settings</h3>
+        <div class="field-row">
+          <span class="field-label">Voice</span>
+          <select id="voice-select" aria-label="Speech voice"></select>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Speed</span>
+          <input type="range" id="rate-range" min="0.5" max="1.3" step="0.1" value="0.9" aria-label="Speech speed">
+        </div>
+        <div class="field-row">
+          <span class="field-label">Volume</span>
+          <input type="range" id="volume-range" min="0.2" max="1" step="0.1" value="1" aria-label="Speech volume">
+        </div>
+        <button class="full-btn" type="button" id="test-voice-btn" style="margin-top:4px;">🔊 Test voice</button>
+      </div>
+
+      <div class="card">
+        <h3>Display</h3>
+        <div class="field-row">
+          <span class="field-label">Text size</span>
+          <div class="scale-group" role="group" aria-label="Text size">
+            <button class="chip" data-scale="md" type="button" aria-pressed="true">A</button>
+            <button class="chip" data-scale="lg" type="button" aria-pressed="false">A+</button>
+            <button class="chip" data-scale="xl" type="button" aria-pressed="false">A++</button>
+          </div>
+        </div>
+        <div class="field-row">
+          <span class="field-label">Theme</span>
+          <div class="theme-group" role="group" aria-label="Color theme">
+            <button class="chip" data-theme-choice="dark" type="button" aria-pressed="true">Dark</button>
+            <button class="chip" data-theme-choice="light" type="button" aria-pressed="false">Light</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var STORAGE = {
+        theme: 'sfm-theme',
+        scale: 'sfm-scale',
+        settings: 'sfm-settings',
+        history: 'sfm-history'
+      };
+
+      function safeGet(key) {
+        try { return localStorage.getItem(key); } catch (e) { return null; }
+      }
+      function safeSet(key, value) {
+        try { localStorage.setItem(key, value); } catch (e) { /* ignore */ }
+      }
+
+      // ---------- Care guideline content ----------
+      var instructions = {
+        emergency: '<ul class="instruction-list">' +
+          '<li>Check breathing, airway, and pulse immediately.</li>' +
+          '<li>Call emergency services right away if unresponsive.</li>' +
+          '<li>Locate their medical file and prescription list.</li>' +
+          '</ul>',
+        restroom: '<ul class="instruction-list">' +
+          '<li>Bring the mobility aid (walker/wheelchair) to the bedside.</li>' +
+          '<li>Support the patient on their weaker side during transfers.</li>' +
+          '<li>Stay within arm\u2019s reach to prevent falls.</li>' +
+          '</ul>',
+        pain: '<ul class="instruction-list">' +
+          '<li>Ask the patient to point to the site of pain.</li>' +
+          '<li>Check the log for scheduled or breakthrough medication.</li>' +
+          '<li>Check blood pressure if pain is severe or sudden.</li>' +
+          '</ul>',
+        food: '<ul class="instruction-list">' +
+          '<li>Raise the patient\u2019s upper body to fully upright.</li>' +
+          '<li>Offer small sips or bites slowly; use thickener if directed.</li>' +
+          '<li>Watch closely for coughing or signs of choking.</li>' +
+          '</ul>',
+        comfort: '<ul class="instruction-list">' +
+          '<li>Smooth bedsheets to reduce pressure-ulcer risk.</li>' +
+          '<li>Use a draw-sheet to shift their weight safely.</li>' +
+          '<li>Prop pillows under the weaker limb for support.</li>' +
+          '</ul>',
+        yes: '<ul class="instruction-list"><li>Proceed with the action you just offered the patient.</li></ul>',
+        no: '<ul class="instruction-list"><li>Stop the current action. Offer a simpler yes/no choice.</li></ul>'
+      };
+
+      var labels = {
+        emergency: 'EMERGENCY', restroom: 'Restroom', pain: 'Pain / meds',
+        food: 'Food / drink', comfort: 'Move / bed', yes: 'Yes', no: 'No'
+      };
+
+      // ---------- Tabs ----------
+      var tabPatient = document.getElementById('tab-patient');
+      var tabCaregiver = document.getElementById('tab-caregiver');
+      var panelPatient = document.getElementById('panel-patient');
+      var panelCaregiver = document.getElementById('panel-caregiver');
+
+      function selectTab(which) {
+        var patientOn = which === 'patient';
+        tabPatient.setAttribute('aria-selected', String(patientOn));
+        tabCaregiver.setAttribute('aria-selected', String(!patientOn));
+        panelPatient.hidden = !patientOn;
+        panelCaregiver.hidden = patientOn;
+      }
+      tabPatient.addEventListener('click', function () { selectTab('patient'); });
+      tabCaregiver.addEventListener('click', function () { selectTab('caregiver'); });
+
+      // ---------- Theme ----------
+      var themeToggleBtn = document.getElementById('theme-toggle');
+      var themeChips = document.querySelectorAll('[data-theme-choice]');
+
+      var themeColorMeta = document.getElementById('theme-color-meta');
+      var THEME_COLORS = { dark: '#121417', light: '#f3f4f6' };
+
+      function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        themeToggleBtn.textContent = theme === 'dark' ? '🌙' : '☀️';
+        themeChips.forEach(function (chip) {
+          chip.setAttribute('aria-pressed', String(chip.dataset.themeChoice === theme));
+        });
+        if (themeColorMeta) themeColorMeta.setAttribute('content', THEME_COLORS[theme] || THEME_COLORS.dark);
+        safeSet(STORAGE.theme, theme);
+      }
+      var storedTheme = safeGet(STORAGE.theme) || 'dark';
+      applyTheme(storedTheme);
+
+      themeToggleBtn.addEventListener('click', function () {
+        var current = document.documentElement.getAttribute('data-theme');
+        applyTheme(current === 'dark' ? 'light' : 'dark');
+      });
+      themeChips.forEach(function (chip) {
+        chip.addEventListener('click', function () { applyTheme(chip.dataset.themeChoice); });
+      });
+
+      // ---------- Text scale ----------
+      var scaleChips = document.querySelectorAll('[data-scale]');
+      function applyScale(scale) {
+        document.documentElement.setAttribute('data-scale', scale === 'md' ? '' : scale);
+        scaleChips.forEach(function (chip) {
+          chip.setAttribute('aria-pressed', String(chip.dataset.scale === scale));
+        });
+        safeSet(STORAGE.scale, scale);
+      }
+      applyScale(safeGet(STORAGE.scale) || 'md');
+      scaleChips.forEach(function (chip) {
+        chip.addEventListener('click', function () { applyScale(chip.dataset.scale); });
+      });
+
+      // ---------- Voice settings ----------
+      var voiceSelect = document.getElementById('voice-select');
+      var rateRange = document.getElementById('rate-range');
+      var volumeRange = document.getElementById('volume-range');
+      var testVoiceBtn = document.getElementById('test-voice-btn');
+
+      var savedSettings = {};
+      try { savedSettings = JSON.parse(safeGet(STORAGE.settings) || '{}'); } catch (e) { savedSettings = {}; }
+      if (savedSettings.rate) rateRange.value = savedSettings.rate;
+      if (savedSettings.volume) volumeRange.value = savedSettings.volume;
+
+      function persistSettings() {
+        safeSet(STORAGE.settings, JSON.stringify({
+          rate: rateRange.value,
+          volume: volumeRange.value,
+          voiceURI: voiceSelect.value
+        }));
+      }
+      rateRange.addEventListener('change', persistSettings);
+      volumeRange.addEventListener('change', persistSettings);
+      voiceSelect.addEventListener('change', persistSettings);
+
+      function populateVoices() {
+        if (!('speechSynthesis' in window)) return;
+        var voices = window.speechSynthesis.getVoices();
+        if (!voices.length) return;
+        voiceSelect.innerHTML = '';
+        voices.forEach(function (v) {
+          var opt = document.createElement('option');
+          opt.value = v.voiceURI;
+          opt.textContent = v.name + ' (' + v.lang + ')';
+          voiceSelect.appendChild(opt);
+        });
+        if (savedSettings.voiceURI) {
+          voiceSelect.value = savedSettings.voiceURI;
+        }
+      }
+      if ('speechSynthesis' in window) {
+        populateVoices();
+        window.speechSynthesis.onvoiceschanged = populateVoices;
+      } else {
+        voiceSelect.innerHTML = '<option>Not supported on this device</option>';
+      }
+
+      // ---------- History ----------
+      var historyList = document.getElementById('history-list');
+      var MAX_HISTORY = 25;
+
+      function loadHistory() {
+        try { return JSON.parse(safeGet(STORAGE.history) || '[]'); } catch (e) { return []; }
+      }
+      function saveHistory(list) {
+        safeSet(STORAGE.history, JSON.stringify(list.slice(0, MAX_HISTORY)));
+      }
+      function renderHistory() {
+        var list = loadHistory();
+        if (!list.length) {
+          historyList.innerHTML = '<li><span class="empty-note">No requests yet.</span></li>';
+          return;
+        }
+        historyList.innerHTML = list.map(function (item) {
+          return '<li><span>' + item.label + '</span><span class="history-time">' + item.time + '</span></li>';
+        }).join('');
+      }
+      function addHistory(label) {
+        var list = loadHistory();
+        var time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        list.unshift({ label: label, time: time });
+        saveHistory(list);
+        renderHistory();
+        return time;
+      }
+      renderHistory();
+
+      document.getElementById('clear-history-btn').addEventListener('click', function () {
+        saveHistory([]);
+        renderHistory();
+      });
+
+      // ---------- Speak ----------
+      var lastUtteranceText = '';
+      var statusDisplay = document.getElementById('status-display');
+      var statusTime = document.getElementById('status-time');
+      var instructionDisplay = document.getElementById('instruction-display');
+
+      function vibrate(pattern) {
+        try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) { /* ignore */ }
+      }
+
+      function speakRaw(text, rate, volume, voiceURI) {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        var utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = parseFloat(rate) || 0.9;
+        utterance.volume = parseFloat(volume) || 1;
+        utterance.pitch = 1.0;
+        if (voiceURI) {
+          var match = window.speechSynthesis.getVoices().filter(function (v) { return v.voiceURI === voiceURI; })[0];
+          if (match) utterance.voice = match;
+        }
+        window.speechSynthesis.speak(utterance);
+      }
+
+      window.speak = function (text, statusText, type) {
+        lastUtteranceText = text;
+        vibrate(type === 'emergency' ? [80, 60, 80] : 40);
+
+        var time = addHistory(labels[type] || statusText);
+        statusDisplay.childNodes[0].textContent = statusText + ' ';
+        statusTime.textContent = 'at ' + time;
+        instructionDisplay.innerHTML = instructions[type] || '';
+
+        speakRaw(text, rateRange.value, volumeRange.value, voiceSelect.value);
+      };
+
+      document.getElementById('repeat-btn').addEventListener('click', function () {
+        if (lastUtteranceText) speakRaw(lastUtteranceText, rateRange.value, volumeRange.value, voiceSelect.value);
+      });
+      document.getElementById('stop-btn').addEventListener('click', function () {
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      });
+      testVoiceBtn.addEventListener('click', function () {
+        speakRaw('This is how I will sound.', rateRange.value, volumeRange.value, voiceSelect.value);
+      });
+    })();
+  </script>
+</body>
+</html>
