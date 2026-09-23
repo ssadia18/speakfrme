@@ -610,10 +610,12 @@
       var FEMALE_VOICE_HINTS = ['female', 'samantha', 'victoria', 'karen', 'susan', 'zira',
         'linda', 'moira', 'tessa', 'fiona', 'kate', 'emma', 'ava', 'joanna', 'salli', 'kimberly'];
 
-      function chooseMaleVoice() {
-        if (!('speechSynthesis' in window)) return null;
+      var preferredPitch = 1.0;
+
+      function chooseVoicePreference() {
+        if (!('speechSynthesis' in window)) return { voice: null, pitch: 1.0 };
         var voices = window.speechSynthesis.getVoices();
-        if (!voices.length) return null;
+        if (!voices.length) return { voice: null, pitch: 1.0 };
 
         var englishVoices = voices.filter(function (v) { return /^en/i.test(v.lang); });
         var pool = englishVoices.length ? englishVoices : voices;
@@ -622,19 +624,26 @@
           var n = v.name.toLowerCase();
           return MALE_VOICE_HINTS.some(function (hint) { return n.indexOf(hint) !== -1; });
         });
-        if (explicitMale.length) return explicitMale[0];
+        if (explicitMale.length) return { voice: explicitMale[0], pitch: 1.0 };
 
+        // Some devices (notably stock Android) expose voices with generic names
+        // like "English (United States)" and no gender info at all. We can't
+        // confirm gender from the name here, so as a best-effort fallback we
+        // lower the pitch a bit to lean more masculine, on top of just avoiding
+        // anything explicitly named as a female voice.
         var notFemale = pool.filter(function (v) {
           var n = v.name.toLowerCase();
           return !FEMALE_VOICE_HINTS.some(function (hint) { return n.indexOf(hint) !== -1; });
         });
-        if (notFemale.length) return notFemale[0];
+        if (notFemale.length) return { voice: notFemale[0], pitch: 0.78 };
 
-        return pool[0];
+        return { voice: pool[0], pitch: 0.78 };
       }
 
       function refreshPreferredVoice() {
-        preferredVoice = chooseMaleVoice();
+        var choice = chooseVoicePreference();
+        preferredVoice = choice.voice;
+        preferredPitch = choice.pitch;
       }
       if ('speechSynthesis' in window) {
         refreshPreferredVoice();
@@ -692,7 +701,7 @@
         var utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = parseFloat(rate) || 0.9;
         utterance.volume = parseFloat(volume) || 1;
-        utterance.pitch = 1.0;
+        utterance.pitch = preferredPitch;
         if (preferredVoice) utterance.voice = preferredVoice;
         window.speechSynthesis.speak(utterance);
       }
