@@ -305,15 +305,6 @@
   .field-row:last-child { margin-bottom: 0; }
   .field-label { font-size: 0.95rem; font-weight: 600; }
   input[type="range"] { width: 55%; accent-color: var(--accent); }
-  select {
-    background: var(--bg);
-    color: var(--text);
-    border: 1px solid var(--card-border);
-    border-radius: 8px;
-    padding: 8px 10px;
-    font-size: 0.92rem;
-    max-width: 55%;
-  }
   .scale-group, .theme-group {
     display: flex;
     gap: 6px;
@@ -374,31 +365,31 @@
 
       <div class="grid-container">
         <button class="comm-btn btn-emergency" type="button"
-          onclick="speak('Attention please. I need immediate help right now.', '🚨 EMERGENCY HELP REQUESTED', 'emergency')">
+          onclick="speak('I need immediate help right now.', '🚨 EMERGENCY HELP REQUESTED', 'emergency')">
           <span class="icon" aria-hidden="true">🚨</span>
           <span>EMERGENCY</span>
         </button>
 
         <button class="comm-btn btn-restroom" type="button"
-          onclick="speak('I need to use the restroom. Please assist me.', '🚽 Restroom assistance requested', 'restroom')">
+          onclick="speak('I need to use the restroom.', '🚽 Restroom assistance requested', 'restroom')">
           <span class="icon" aria-hidden="true">🚽</span>
           <span>RESTROOM</span>
         </button>
 
         <button class="comm-btn btn-pain" type="button"
-          onclick="speak('I am in pain or discomfort. I need my medication.', '💊 Pain or medication request', 'pain')">
+          onclick="speak('I need my medication.', '💊 Pain or medication request', 'pain')">
           <span class="icon" aria-hidden="true">💊</span>
           <span>PAIN / MEDS</span>
         </button>
 
         <button class="comm-btn btn-food" type="button"
-          onclick="speak('I am thirsty or hungry. Please bring water or food.', '🥤 Food or drink requested', 'food')">
+          onclick="speak('Please bring water or food.', '🥤 Food or drink requested', 'food')">
           <span class="icon" aria-hidden="true">🥤</span>
           <span>FOOD / DRINK</span>
         </button>
 
         <button class="comm-btn btn-comfort" type="button"
-          onclick="speak('I am uncomfortable. Please help me adjust my position.', '🛌 Repositioning needed', 'comfort')">
+          onclick="speak('I am uncomfortable, help me adjust my position.', '🛌 Repositioning needed', 'comfort')">
           <span class="icon" aria-hidden="true">🛌</span>
           <span>MOVE / BED</span>
         </button>
@@ -450,10 +441,6 @@
 
       <div class="card">
         <h3>Voice settings</h3>
-        <div class="field-row">
-          <span class="field-label">Voice</span>
-          <select id="voice-select" aria-label="Speech voice"></select>
-        </div>
         <div class="field-row">
           <span class="field-label">Speed</span>
           <input type="range" id="rate-range" min="0.5" max="1.3" step="0.1" value="0.9" aria-label="Speech speed">
@@ -598,7 +585,6 @@
       });
 
       // ---------- Voice settings ----------
-      var voiceSelect = document.getElementById('voice-select');
       var rateRange = document.getElementById('rate-range');
       var volumeRange = document.getElementById('volume-range');
       var testVoiceBtn = document.getElementById('test-voice-btn');
@@ -611,34 +597,48 @@
       function persistSettings() {
         safeSet(STORAGE.settings, JSON.stringify({
           rate: rateRange.value,
-          volume: volumeRange.value,
-          voiceURI: voiceSelect.value
+          volume: volumeRange.value
         }));
       }
       rateRange.addEventListener('change', persistSettings);
       volumeRange.addEventListener('change', persistSettings);
-      voiceSelect.addEventListener('change', persistSettings);
 
-      function populateVoices() {
-        if (!('speechSynthesis' in window)) return;
+      // Always speak in a male voice; no voice picker shown to the caregiver.
+      var preferredVoice = null;
+      var MALE_VOICE_HINTS = ['male', 'david', 'alex', 'daniel', 'fred', 'george', 'james',
+        'mark', 'tom', 'guy', 'ryan', 'aaron', 'oliver', 'thomas', 'matthew', 'liam', 'brian'];
+      var FEMALE_VOICE_HINTS = ['female', 'samantha', 'victoria', 'karen', 'susan', 'zira',
+        'linda', 'moira', 'tessa', 'fiona', 'kate', 'emma', 'ava', 'joanna', 'salli', 'kimberly'];
+
+      function chooseMaleVoice() {
+        if (!('speechSynthesis' in window)) return null;
         var voices = window.speechSynthesis.getVoices();
-        if (!voices.length) return;
-        voiceSelect.innerHTML = '';
-        voices.forEach(function (v) {
-          var opt = document.createElement('option');
-          opt.value = v.voiceURI;
-          opt.textContent = v.name + ' (' + v.lang + ')';
-          voiceSelect.appendChild(opt);
+        if (!voices.length) return null;
+
+        var englishVoices = voices.filter(function (v) { return /^en/i.test(v.lang); });
+        var pool = englishVoices.length ? englishVoices : voices;
+
+        var explicitMale = pool.filter(function (v) {
+          var n = v.name.toLowerCase();
+          return MALE_VOICE_HINTS.some(function (hint) { return n.indexOf(hint) !== -1; });
         });
-        if (savedSettings.voiceURI) {
-          voiceSelect.value = savedSettings.voiceURI;
-        }
+        if (explicitMale.length) return explicitMale[0];
+
+        var notFemale = pool.filter(function (v) {
+          var n = v.name.toLowerCase();
+          return !FEMALE_VOICE_HINTS.some(function (hint) { return n.indexOf(hint) !== -1; });
+        });
+        if (notFemale.length) return notFemale[0];
+
+        return pool[0];
+      }
+
+      function refreshPreferredVoice() {
+        preferredVoice = chooseMaleVoice();
       }
       if ('speechSynthesis' in window) {
-        populateVoices();
-        window.speechSynthesis.onvoiceschanged = populateVoices;
-      } else {
-        voiceSelect.innerHTML = '<option>Not supported on this device</option>';
+        refreshPreferredVoice();
+        window.speechSynthesis.onvoiceschanged = refreshPreferredVoice;
       }
 
       // ---------- History ----------
@@ -686,17 +686,14 @@
         try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) { /* ignore */ }
       }
 
-      function speakRaw(text, rate, volume, voiceURI) {
+      function speakRaw(text, rate, volume) {
         if (!('speechSynthesis' in window)) return;
         window.speechSynthesis.cancel();
         var utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = parseFloat(rate) || 0.9;
         utterance.volume = parseFloat(volume) || 1;
         utterance.pitch = 1.0;
-        if (voiceURI) {
-          var match = window.speechSynthesis.getVoices().filter(function (v) { return v.voiceURI === voiceURI; })[0];
-          if (match) utterance.voice = match;
-        }
+        if (preferredVoice) utterance.voice = preferredVoice;
         window.speechSynthesis.speak(utterance);
       }
 
@@ -709,17 +706,17 @@
         statusTime.textContent = 'at ' + time;
         instructionDisplay.innerHTML = instructions[type] || '';
 
-        speakRaw(text, rateRange.value, volumeRange.value, voiceSelect.value);
+        speakRaw(text, rateRange.value, volumeRange.value);
       };
 
       document.getElementById('repeat-btn').addEventListener('click', function () {
-        if (lastUtteranceText) speakRaw(lastUtteranceText, rateRange.value, volumeRange.value, voiceSelect.value);
+        if (lastUtteranceText) speakRaw(lastUtteranceText, rateRange.value, volumeRange.value);
       });
       document.getElementById('stop-btn').addEventListener('click', function () {
         if ('speechSynthesis' in window) window.speechSynthesis.cancel();
       });
       testVoiceBtn.addEventListener('click', function () {
-        speakRaw('This is how I will sound.', rateRange.value, volumeRange.value, voiceSelect.value);
+        speakRaw('This is how I will sound.', rateRange.value, volumeRange.value);
       });
     })();
   </script>
